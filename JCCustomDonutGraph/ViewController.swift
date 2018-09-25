@@ -8,21 +8,25 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+final class ViewController: UIViewController {
 
-    @IBOutlet var donut: JCDonutGraphView!
+    @IBOutlet var donut: JCDonutGraphView! {
+        didSet {
+            donut.backgroundColor = .clear
+            donut.arcWidth = 10
+            donut.startAngle = 0
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .lightGrayColor()
-        
-        donut.backgroundColor = .clearColor()
-        donut.arcWidth = 40
-        donut.startAngle = 0
+
+        view.backgroundColor = .lightGray
+
         donut.segments = [
-            JCDonutGraphView.Segment(ratio: 0.5, color: .blueColor()),
-            JCDonutGraphView.Segment(ratio: 1, color: .greenColor()),
-            JCDonutGraphView.Segment(ratio: 2, color: .redColor())
+            .init(color: .blue, ratio: 0.2),
+            .init(color: .green, ratio: 0.2),
+            .init(color: .red)
         ]
     }
     

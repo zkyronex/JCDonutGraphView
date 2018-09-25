@@ -8,22 +8,31 @@
 
 import UIKit
 
-private let π: CGFloat = CGFloat(M_PI)
+private let π: CGFloat = .pi
+
+public extension JCDonutGraphView {
+
+    struct Segment {
+
+        let color: UIColor
+        let ratio: CGFloat
+
+        init(color: UIColor, ratio: CGFloat = 1) {
+            self.color = color
+            self.ratio = ratio
+        }
+    }
+}
 
 @IBDesignable public class JCDonutGraphView: UIView {
     
-    public struct Segment {
-        let ratio: CGFloat
-        let color: UIColor
-    }
-    
     // Default values
-    @IBInspectable public var arcBackgroundColor: UIColor = .lightGrayColor()
+    @IBInspectable public var arcPlaceholderColor: UIColor = .lightGray
     @IBInspectable public var arcWidth: CGFloat = 40
-    
+
     public var startAngle: CGFloat = 0   // Zero starts at 12 o'clock and rotates clockwise
     
-    private var angleInRadians: CGFloat {
+    private var startAngleInRadians: CGFloat {
         // Check valid angle ranges
         var angle: CGFloat = max(startAngle, 0)
         angle = min(angle, 360)
@@ -33,43 +42,58 @@ private let π: CGFloat = CGFloat(M_PI)
         return angle - (π / 2)
     }
     
-    public var segments: [Segment] = []
+    public var segments: [Segment] = [] {
+        didSet {
+            setNeedsDisplay()
+        }
+    }
     
-    public override func drawRect(rect: CGRect) {
+    public override func draw(_ rect: CGRect) {
+        super.draw(rect)
+
         let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
         let radius: CGFloat = min(bounds.width, bounds.height)
         
         arcWidth = min(arcWidth, bounds.width/2)
         arcWidth = max(arcWidth, 0)
         let arcRadius = radius / 2 - arcWidth / 2
-        
-        // Background
-        let pathBackground = UIBezierPath(arcCenter: center,
-                                          radius: arcRadius,
-                                          startAngle: 0,
-                                          endAngle: 2 * π,
-                                          clockwise: true)
+
+        drawPlaceholderArcFor(center: center, arcRadius: arcRadius)
+        drawArcSegmentsFor(center: center, arcRadius: arcRadius)
+    }
+
+    private func drawPlaceholderArcFor(center: CGPoint, arcRadius: CGFloat) {
+        let pathBackground = UIBezierPath(
+            arcCenter: center,
+            radius: arcRadius,
+            startAngle: 0,
+            endAngle: 2 * π,
+            clockwise: true
+        )
+
         pathBackground.lineWidth = arcWidth
-        arcBackgroundColor.setStroke()
+        arcPlaceholderColor.setStroke()
         pathBackground.stroke()
-        
-        // Total ratio
-        let total = segments.reduce(0) { (sum, section) in
-            return sum + section.ratio
-        }
-        
-        // Foreground Sections
-        var currentAngle: CGFloat = angleInRadians
+    }
+
+    private func drawArcSegmentsFor(center: CGPoint, arcRadius: CGFloat) {
+        let totalRatio = segments
+            .map { $0.ratio }
+            .reduce(0, +)
+
+        var currentAngle: CGFloat = startAngleInRadians
         segments.forEach { segment in
-            let startAngle: CGFloat = currentAngle
-            let endAngle: CGFloat = startAngle + (segment.ratio / total) * (2 * π)
+            let startAngle = currentAngle
+            let endAngle = startAngle + (segment.ratio / totalRatio) * (2 * π)
             currentAngle = endAngle
-            
-            let pathForeground = UIBezierPath(arcCenter: center,
+
+            let pathForeground = UIBezierPath(
+                arcCenter: center,
                 radius: arcRadius,
                 startAngle: startAngle,
                 endAngle: endAngle,
-                clockwise: true)
+                clockwise: true
+            )
             pathForeground.lineWidth = arcWidth
             segment.color.setStroke()
             pathForeground.stroke()
